@@ -312,7 +312,7 @@
 
   const TableColumns: TableColumnData[] = ColumnsConstant.TableColumnData;
 
-  const transferRulesRef = ref<FormInstance>();
+  const transferRulesRef = ref();
   const settingsSetRef = ref();
 
   const selectedKeys = ref([]);
