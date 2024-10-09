@@ -18,11 +18,13 @@
               v-if="env.projectId === item.id"
               :key="env.id"
               style="position: relative"
+              class="env"
             >
               {{ env.name }}
               <a-button
                 type="primary"
                 status="danger"
+                class="env-delete"
                 style="position: absolute; right: 0; height: 100%"
                 @click="deleteEnv(env)"
               >
@@ -50,7 +52,15 @@
           </div>
         </a-sub-menu>
         <div class="add-project-btn" style="text-align: center">
-          <!-- <template #icon><icon-plus></icon-plus></template> -->
+          <a-button
+            size="large"
+            long
+            type="text"
+            @click="settingsVisible = true"
+          >
+            <template #icon><icon-settings /></template>
+            设置
+          </a-button>
           <a-button size="large" long type="text" @click="addProjectClick">
             <template #icon><icon-plus></icon-plus></template>
             添加项目
@@ -62,21 +72,6 @@
     <div class="right-panel">
       <div class="home-page-bar">
         <span class="logo">Sunyur Proxy</span>
-        <span>
-          <!-- <a-space>
-            代理启用：
-            <a-switch>
-              <template #checked> ON </template>
-              <template #unchecked> OFF </template>
-            </a-switch>
-            <a-button type="text">
-              <template #icon>
-                <icon-plus />
-              </template>
-              添加应用
-            </a-button>
-          </a-space> -->
-        </span>
       </div>
       <div class="proxy-setting">
         <a-form
@@ -91,7 +86,7 @@
                 >{{ projectObj?.name }}-{{
                   itemEnv?.name
                 }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;使用代理工具时，请在项目中的配置文件中将target设置为：<a-link
-                  >http://127.0.0.1:8015/</a-link
+                  >http://127.0.0.1:{{ homeStore.port }}/</a-link
                 ></h4
               >
             </a-card>
@@ -100,7 +95,6 @@
               <template #extra>
                 <a-button type="primary" @click="addDomain">添加域名</a-button>
               </template>
-
               <a-space direction="vertical">
                 <div
                   v-for="(item, index) in itemProxyValue.domainList"
@@ -126,7 +120,6 @@
                 </div>
               </a-space>
             </a-card>
-
             <a-card class="general-card" title="代理规则">
               <template #extra>
                 <a-space>
@@ -186,7 +179,7 @@
               </template>
               <a-table
                 :row-selection="rowSelection"
-                :columns="columns"
+                :columns="TableColumns"
                 :data="itemProxyValue.hearderList"
               >
                 <template #Key="{ rowIndex }">
@@ -273,6 +266,14 @@
       </a-space>
     </template>
   </a-modal>
+  <a-modal v-model:visible="settingsVisible">
+    <template #title> 设置 </template>
+    <settingsSet ref="settingsSetRef"></settingsSet>
+    <template #footer>
+      <a-button @click="settingsVisible = false">取消</a-button>
+      <a-button type="primary" @click="handleSettingsOk()">确定</a-button>
+    </template>
+  </a-modal>
 </template>
 
 <script setup lang="ts" name="index">
@@ -296,15 +297,23 @@
     Modal,
   } from '@arco-design/web-vue';
   import { watch, computed, onMounted, reactive, ref, nextTick } from 'vue';
-  import { ipcRenderer } from 'electron';
+  import useHomeStore from '@/store/modules/home';
   import transferRules from './components/transfer-rules.vue';
+  import settingsSet from './components/settings-set.vue';
+  import ColumnsConstant from './constant';
+
+  const homeStore = useHomeStore();
 
   const addProjectVisible = ref(false);
   const addEnvVisible = ref(false);
   const deleteEnvVisible = ref(false);
   const transferRulrsVisible = ref(false);
+  const settingsVisible = ref(false);
 
-  const transferRulesRef = ref();
+  const TableColumns: TableColumnData[] = ColumnsConstant.TableColumnData;
+
+  const transferRulesRef = ref<FormInstance>();
+  const settingsSetRef = ref();
 
   const selectedKeys = ref([]);
   const addProjectName = ref('');
@@ -339,7 +348,7 @@
   }
 
   async function handleAddRulesOk() {
-    const rulesArr = await transferRulesRef.value.getAllRules();
+    const rulesArr = await transferRulesRef?.value?.getAllRules();
     if (rulesArr.length) {
       rulesArr.forEach((ruleParm: string) => {
         itemProxyValue.value.proxyRules.push({
@@ -349,8 +358,12 @@
             : '',
         });
       });
+      transferRulrsVisible.value = false;
+      transferRulesRef?.value?.resetForm();
+    } else {
+      Message.warning('请按照提示内容输入正确的代理规则');
+      transferRulesRef?.value?.resetForm();
     }
-    transferRulrsVisible.value = false;
   }
 
   function addDomain() {
@@ -370,30 +383,6 @@
     showCheckedAll: true,
     onlyCurrent: false,
   });
-  const columns: TableColumnData[] = [
-    {
-      title: 'Key',
-      dataIndex: 'value',
-      width: 220,
-      slotName: 'Key',
-    },
-    {
-      title: 'Value',
-      dataIndex: 'value',
-      slotName: 'Value',
-    },
-    {
-      title: '描述',
-      dataIndex: 'desc',
-      slotName: 'desc',
-    },
-    {
-      title: '操作',
-      dataIndex: 'actions',
-      slotName: 'actions',
-    },
-  ];
-
   const itemProxyKey = ref('');
   function menuItemClick(key: string) {
     itemProxyKey.value = key;
@@ -438,10 +427,7 @@
           ...itemEnv.value!,
           setting: itemProxyValue.value!,
         });
-        const timer = setTimeout(() => {
-          window.location.reload();
-          clearTimeout(timer);
-        }, 100);
+        envList.value = await getEnvList();
         Message.success('保存成功');
       }
     });
@@ -475,7 +461,7 @@
         await deleteEnvByProjectId(projectId);
         await deleteProjectById(projectId);
         Message.success('删除项目成功');
-        window.location.reload();
+        projectList.value = await getProjectList();
       },
     });
   }
@@ -523,20 +509,45 @@
   async function handleDeleteEnvOk(row: any) {
     await deleteEnvById(row.id);
     Message.success('删除环境成功');
-    window.location.reload();
+    deleteEnvVisible.value = false;
+    envList.value = await getEnvList();
+  }
+
+  async function handleSettingsOk() {
+    const res = await settingsSetRef.value.checkData();
+    if (res.res) {
+      Message.success(`修改端口号成功，请在项目中将target设置为${res.port}`);
+      settingsVisible.value = false;
+    }
   }
 
   onMounted(async () => {
     init();
+    homeStore.getSettings();
   });
 </script>
 
 <style lang="less">
   .home-page {
+    ::-webkit-scrollbar {
+      width: 2px; /* 垂直滚动条 */
+      height: 2px; /* 水平滚动条 */
+    }
     display: flex;
     height: 100vh;
     background-color: var(--color-fill-2);
     .project-menu {
+      .env {
+        .env-delete {
+          visibility: hidden;
+        }
+        &:hover .env-delete {
+          visibility: visible;
+        }
+      }
+      /* 滚动条的轨道（背景） */
+      // padding-bottom: 40%;
+      margin-bottom: 20px;
       .arco-menu-inner {
         display: flex;
         flex-direction: column;

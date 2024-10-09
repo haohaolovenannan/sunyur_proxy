@@ -16,18 +16,15 @@
         maxRows: 500,
       }"
     />
-    {{ testData }}
   </div>
 </template>
 
 <script setup lang="ts">
-  import { values } from 'lodash';
-  import { computed, reactive, ref } from 'vue';
+  import { ref } from 'vue';
 
   defineOptions({
     name: 'TransferRules',
   });
-  const testData: any = ref();
   const rulesObj = ref({
     proxyTable: '',
   });
@@ -51,12 +48,16 @@
         }
       }
     }
-    testData.value = rulesArr;
     return rulesArr;
+  }
+
+  function resetForm() {
+    rulesObj.value.proxyTable = '';
   }
 
   defineExpose({
     getAllRules,
+    resetForm,
   });
 </script>
 

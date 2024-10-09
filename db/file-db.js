@@ -26,7 +26,7 @@ console.log(directoryPath);
 
 fs.mkdirSync(directoryPath, { recursive: true }); // 创建目录（如果不存在）
 
-const findData = async (fileName) => {
+const findData = async (fileName, findType = '') => {
   fileName = `${directoryPath + fileName}.json`;
   return new Promise((resolve) => {
     // 检查文件是否存在
@@ -38,10 +38,17 @@ const findData = async (fileName) => {
     fs.readFile(fileName, 'utf8', (err, data) => {
       if (err) {
         // 如果文件不存在，创建一个新文件
-        fs.writeFile(fileName, '[]', (error) => {
-          if (error) throw err;
-          resolve([]);
-        });
+        if (findType !== 'setting') {
+          fs.writeFile(fileName, '[]', (error) => {
+            if (error) throw err;
+            resolve([]);
+          });
+        } else {
+          fs.writeFile(fileName, '{}', (error) => {
+            if (error) throw err;
+            resolve({});
+          });
+        }
       } else {
         try {
           resolve(JSON.parse(data));
@@ -92,6 +99,7 @@ const delDataById = async (fileName, id, deleteType) => {
     default:
       break;
   }
+  return '';
 };
 
 // 项目删除
@@ -118,10 +126,39 @@ const updateById = async (fileName, id, data) => {
   });
 };
 
+const updateProxyPort = async (fileName, data) => {
+  return new Promise((resolve) => {
+    findData(fileName, 'setting').then((config) => {
+      config[0].port = data.port;
+      updateData(fileName, config).then(resolve);
+    });
+  });
+};
+
+const getSettings = (fileName) => {
+  return new Promise((resolve) => {
+    findData(fileName, 'setting').then((config) => {
+      resolve(config);
+    });
+  });
+};
+
+const createSettings = (fileName) => {
+  return new Promise((resolve) => {
+    findData(fileName, 'setting').then((config) => {
+      config.push({ port: 8015 });
+      updateData(fileName, config).then(resolve);
+    });
+  });
+};
+
 module.exports = {
   findData,
   createData,
   delDataById, // 环境删除
   delData, // 项目删除
   updateById,
+  updateProxyPort, // 修改项目配置
+  getSettings, // 获取项目配置
+  createSettings,
 };

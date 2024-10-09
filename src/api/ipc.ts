@@ -11,6 +11,10 @@ export interface IProxy {
   }>;
 }
 
+export interface Setting {
+  port: string;
+}
+
 export interface IEnv {
   id: string;
   projectId: string;
@@ -78,4 +82,12 @@ export function updateEnvById(
   Array<{ projectId: string; name: string; id: string; setting: IProxy }>
 > {
   return window.API.env.updateById(id, JSON.stringify(data));
+}
+
+export function updateProxyPort(data: Setting) {
+  return window.API.project.updateProxyPort(data);
+}
+
+export function getSettings() {
+  return window.API.project.getSettings();
 }

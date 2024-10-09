@@ -3,6 +3,7 @@ const path = require('path')
 const { createProxy } = require('./proxy-server')
 const projectData = require('./db/project')
 const envTable = require('./db/env')
+const settingData = require('./db/setting')
 const http = require('http');
 
 app.requestSingleInstanceLock()
@@ -11,6 +12,7 @@ app.requestSingleInstanceLock()
 let proxyRules = []
 let HeaderList = []
 let currentEnv = ''
+let listenPort = 8015
 const createWindow = () => {
   // 打包使用
   // const win = new BrowserWindow({
@@ -43,8 +45,12 @@ const createWindow = () => {
   view1.webContents.loadURL('http://127.0.0.1:5173/#/')
   view1.setBounds({ x: 0, y: toolbarHeight, width: 1000, height: 800 - toolbarHeight })
 }
+let proxyServer = ''
 
 function createHttpServer() {
+  if (proxyServer) {
+    proxyServer.close(); // 关闭当前服务器
+  }
   proxyServer = http.createServer(function (req, res) {
     const rule = proxyRules.find(item => {
       return new RegExp(item.rule).test(req.url)
@@ -60,7 +66,7 @@ function createHttpServer() {
     } else {
       res.end();
     }
-  }).listen(8015);
+  }).listen(listenPort);
 } 
 
 async function setProxyTable() {
@@ -90,11 +96,24 @@ async function setProxyTable() {
     HeaderList = []
   }
 }
+
+async function setSettings(){
+  let setting = await settingData.getSettings()
+  if(!setting.length){
+    await settingData.createSettings()
+    setting = await settingData.getSettings()
+  }
+  listenPort = parseInt(setting[0].port)
+}
 app.on('ready', () => {
+  setSettings()
   createHttpServer()
   createWindow()
   ipcMain.handle('project.getList', () => {
     return projectData.getList()
+  })
+  ipcMain.handle('project.getSettings', () => {
+    return settingData.getSettings()
   })
   ipcMain.handle('project.addData', (_, data) => {
     return projectData.add(data)
@@ -121,6 +140,12 @@ app.on('ready', () => {
     await setProxyTable();
     return true
   })
+  ipcMain.handle('project.updateProxyPort',async (_,data) => {
+    await settingData.updateProxyPort(data)
+    // 更新过后重新获取setting并重启http服务
+    setSettings()
+    createHttpServer()
+  })  
 
   ipcMain.handle('proxy.switch', async (_, envId) => {
     currentEnv = envId
