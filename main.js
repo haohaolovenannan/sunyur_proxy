@@ -52,6 +52,10 @@ function createHttpServer() {
     proxyServer.close(); // 关闭当前服务器
   }
   proxyServer = http.createServer(function (req, res) {
+    // 设置跨域响应头
+    res.setHeader('Access-Control-Allow-Origin', '*'); // 允许所有来源
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // 允许的方法
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); // 允许的请求头
     const rule = proxyRules.find(item => {
       return new RegExp(item.rule).test(req.url)
     })
@@ -104,6 +108,7 @@ async function setSettings(){
     setting = await settingData.getSettings()
   }
   listenPort = parseInt(setting[0].port)
+  createHttpServer()
 }
 app.on('ready', () => {
   setSettings()
