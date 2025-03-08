@@ -6,13 +6,14 @@ const useHomeStore = defineStore('home', {
   state: () => {
     return {
       port: 8015,
+      status: false,
     };
   },
   actions: {
     async updateListenPort(listenPort: string) {
-      await updateProxyPort({ port: listenPort });
+      const updateResult = await updateProxyPort({ port: listenPort });
       this.port = parseInt(listenPort);
-      return true;
+      return updateResult;
     },
 
     async getSettings() {

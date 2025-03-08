@@ -61,7 +61,9 @@
 
   onMounted(async () => {
     await nextTick();
-    homeStore.getSettings();
+    await homeStore.getSettings();
+    const status = await homeStore.updateListenPort(homeStore.port);
+    alert(status);
   });
 
   defineExpose({

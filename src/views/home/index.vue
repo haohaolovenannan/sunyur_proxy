@@ -72,6 +72,24 @@
     <div class="right-panel">
       <div class="home-page-bar">
         <span class="logo">Sunyur Proxy</span>
+        <span class="current_port">当前端口：{{ homeStore.port }}</span>
+        <span class="port_status">
+          端口状态：
+          <!-- 成功状态 -->
+          <a-tag color="#7bc616" v-if="portStatus">
+            <template #icon>
+              <icon-check-circle-fill />
+            </template>
+            正常
+          </a-tag>
+          <!-- 失败状态 -->
+          <a-tag v-else color="#f53f3f">
+            <template #icon>
+              <icon-close-circle-fill />
+            </template>
+            异常，请更换端口
+          </a-tag>
+        </span>
       </div>
       <div class="proxy-setting">
         <a-form
@@ -320,6 +338,7 @@
   const deleteEnvData = ref();
   const addEnvName = ref('');
   const inputEnvName = ref();
+  const portStatus = ref(true)
   const projectList = ref<
     Array<{
       name: string;
@@ -570,6 +589,13 @@
       .logo {
         font-size: 22px;
         font-weight: 600;
+      }
+
+      .port_status {
+        display: inline-block;
+        width: 33%;
+        text-align: left;
+        // background-color: red;
       }
     }
     .right-panel {
