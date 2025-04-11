@@ -5,6 +5,7 @@
       :model="settingsForm"
       :style="{ width: '400px' }"
     >
+      {{ settingsForm.port }}
       <a-form-item
         field="port"
         tooltip=""
@@ -25,7 +26,7 @@
 </template>
 
 <script setup lang="ts" name="settings">
-  import { nextTick, onMounted, ref } from 'vue';
+  import { nextTick, onMounted, ref, watch } from 'vue';
   import { FormInstance } from '@arco-design/web-vue';
   import useHomeStore from '@/store/modules/home';
 
@@ -39,29 +40,33 @@
   const settingsFormRef = ref<FormInstance>();
   const homeStore = useHomeStore();
   const settingsForm = ref({
-    port: `${homeStore.port}`,
+    port: '',
   });
 
-  homeStore.$subscribe((mutation, state) => {
-    // 每当状态发生变化时，将整个 state 持久化到本地存储。
-    settingsForm.value.port = state.port.toString();
-  });
+  const stopWatch = watch(
+    () => homeStore.port,
+    (newVal, preVal) => {
+      if (newVal !== 0) {
+        homeStore.checkPortStatus(newVal.toString());
+        stopWatch();
+      }
+    }
+  );
 
   async function checkData() {
-    const res = await settingsFormRef?.value?.validate(async (error) => {
-      if (!error) {
-        homeStore.updateListenPort(settingsForm.value.port);
-      }
-    });
+    await settingsFormRef?.value?.validate();
+    await homeStore.checkPortStatus(settingsForm.value.port);
+    homeStore.updateListenPort(settingsForm.value.port);
     return {
-      res: !res,
       port: settingsForm.value.port,
     };
   }
 
   onMounted(async () => {
     await nextTick();
-    homeStore.getSettings();
+    // 挂载的时候获取当前端口
+    await homeStore.getSettings();
+    settingsForm.value.port = `${homeStore.port}`;
   });
 
   defineExpose({

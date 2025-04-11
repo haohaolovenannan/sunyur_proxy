@@ -17,6 +17,7 @@ export default mergeConfig(
     ],
     build: {
       rollupOptions: {
+        external: ['net'],
         output: {
           manualChunks: {
             arco: ['@arco-design/web-vue'],

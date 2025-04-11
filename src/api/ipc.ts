@@ -91,3 +91,7 @@ export function updateProxyPort(data: Setting) {
 export function getSettings() {
   return window.API.project.getSettings();
 }
+
+export function checkPort(port: number) {
+  return window.API.project.checkPort(port);
+}

@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('API', {
     deleteById: (projectId) => ipcRenderer.invoke('project.deleteById',projectId),
     updateProxyPort: (data) => ipcRenderer.invoke('project.updateProxyPort',data),
     getSettings:() => ipcRenderer.invoke('project.getSettings'),
+    checkPort: (port) => ipcRenderer.invoke('project.checkPortStatus',port),
   },
   env: {
     getList: () => ipcRenderer.invoke('env.getList'),

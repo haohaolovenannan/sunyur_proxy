@@ -52,6 +52,10 @@
           </div>
         </a-sub-menu>
         <div class="add-project-btn" style="text-align: center">
+          <a-button size="large" long type="text" @click="addProjectClick">
+            <template #icon><icon-plus></icon-plus></template>
+            添加项目
+          </a-button>
           <a-button
             size="large"
             long
@@ -61,10 +65,6 @@
             <template #icon><icon-settings /></template>
             设置
           </a-button>
-          <a-button size="large" long type="text" @click="addProjectClick">
-            <template #icon><icon-plus></icon-plus></template>
-            添加项目
-          </a-button>
         </div>
       </a-menu>
     </div>
@@ -72,6 +72,22 @@
     <div class="right-panel">
       <div class="home-page-bar">
         <span class="logo">Sunyur Proxy</span>
+        <span>当前端口：{{ homeStore.port }}</span>
+        <span
+          >端口状态：
+          <a-tag v-if="homeStore.status" color="green">
+            正常
+            <template #icon>
+              <icon-check-circle-fill />
+            </template>
+          </a-tag>
+          <a-tag v-else color="red">
+            异常
+            <template #icon>
+              <icon-close-circle-fill />
+            </template>
+          </a-tag>
+        </span>
       </div>
       <div class="proxy-setting">
         <a-form
@@ -515,7 +531,7 @@
 
   async function handleSettingsOk() {
     const res = await settingsSetRef.value.checkData();
-    if (res.res) {
+    if (res.port) {
       Message.success(`修改端口号成功，请在项目中将target设置为${res.port}`);
       settingsVisible.value = false;
     }

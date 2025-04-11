@@ -5,6 +5,7 @@ const projectData = require('./db/project')
 const envTable = require('./db/env')
 const settingData = require('./db/setting')
 const http = require('http');
+const net = require('net');
 
 app.requestSingleInstanceLock()
 // const userData = app.getPath('userData')
@@ -15,37 +16,62 @@ let currentEnv = ''
 let listenPort = 8015
 const createWindow = () => {
   // 打包使用
-  // const win = new BrowserWindow({
-  //   width: 1000,
-  //   height: 800,
-  //   // frame: false,
-  //   autoHideMenuBar: true,
-    
-  //   webPreferences: {
-  //     preload: path.join(__dirname, 'preload.js'),
-  //     nodeIntegration: true
-  //   }
-  // })
-  // win.loadFile('./dist/index.html')
 
-  // 本地开发调试使用
-  const win = new BaseWindow({ width: 1000, height: 1000 })
-  const view1 = new WebContentsView({
+  const win = new BrowserWindow({
     width: 1000,
     height: 800,
     // frame: false,
+    autoHideMenuBar: true,
+    
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true,
+      webSecurity: false
     }
   })
-  win.contentView.addChildView(view1)
-  const isMac = process.platform === 'darwin';  
-  const toolbarHeight = isMac ? 22 : 29;  
-  view1.webContents.loadURL('http://127.0.0.1:5173/#/')
-  view1.setBounds({ x: 0, y: toolbarHeight, width: 1000, height: 800 - toolbarHeight })
+  win.loadFile('./dist/index.html')
+
+  // 本地开发调试使用
+
+  // const win = new BaseWindow({ width: 1000, height: 1000 })
+  // const view1 = new WebContentsView({
+  //   width: 1000,
+  //   height: 800,
+  //   // frame: false,
+  //   webPreferences: {
+  //     preload: path.join(__dirname, 'preload.js'),
+  //     nodeIntegration: true,
+  //   }
+  // })
+  // win.contentView.addChildView(view1)
+  // const isMac = process.platform === 'darwin';  
+  // const toolbarHeight = isMac ? 22 : 29;  
+  // view1.webContents.loadURL('http://127.0.0.1:5173/#/')
+  // view1.setBounds({ x: 0, y: toolbarHeight, width: 1000, height: 800 - toolbarHeight })
 }
 let proxyServer = ''
+
+// 检查端口状态
+function checkPortFn(port) {
+  console.log('checkPort', port);
+  return new Promise((resolve, reject) => {
+    // 使用try/catch捕获错误
+    try {
+      const server = net.createServer().listen(port);
+      server.on('listening', function () {
+        console.log('success', port);
+        resolve(true);
+        server.close();
+      });
+      server.on('error', function (err) {
+        reject(err);
+        server.close();
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
 
 function createHttpServer() {
   if (proxyServer) {
@@ -151,6 +177,9 @@ app.on('ready', () => {
     setSettings()
     createHttpServer()
   })  
+  ipcMain.handle('project.checkPortStatus', (_,port) => {
+    return checkPortFn(Number(port))
+  })
 
   ipcMain.handle('proxy.switch', async (_, envId) => {
     currentEnv = envId
