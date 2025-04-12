@@ -272,24 +272,27 @@
       </a-space>
     </template>
   </a-modal>
+
+  <!-- 优化添加规则，使用正则匹配 -->
   <a-modal v-model:visible="transferRulrsVisible">
     <template #title> 快捷添加规则 </template>
     <transferRules ref="transferRulesRef"></transferRules>
     <template #footer>
       <a-space size="small">
-        <a-button @click="transferRulrsVisible = false">取消</a-button>
-        <a-button type="primary" @click="handleAddRulesOk()">添加规则</a-button>
+        <a-button @click="transferRulrsVisible = false"> 取消 </a-button>
+        <a-button type="primary" @click="handleAddRulesOk()">
+          添加规则
+        </a-button>
       </a-space>
     </template>
   </a-modal>
-  <a-modal v-model:visible="settingsVisible">
-    <template #title> 设置 </template>
-    <settingsSet ref="settingsSetRef"></settingsSet>
-    <template #footer>
-      <a-button @click="settingsVisible = false">取消</a-button>
-      <a-button type="primary" @click="handleSettingsOk()">确定</a-button>
-    </template>
-  </a-modal>
+
+  <!-- 代理设置 -->
+  <settingsSet
+    ref="settingsSetRef"
+    v-model:visible="settingsVisible"
+    @handle-settings-ok="handleSettingsOk"
+  ></settingsSet>
 </template>
 
 <script setup lang="ts" name="index">

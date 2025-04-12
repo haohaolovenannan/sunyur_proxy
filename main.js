@@ -17,37 +17,37 @@ let listenPort = 8015
 const createWindow = () => {
   // 打包使用
 
-  const win = new BrowserWindow({
-    width: 1000,
-    height: 800,
-    // frame: false,
-    autoHideMenuBar: true,
-    
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: true,
-      webSecurity: false
-    }
-  })
-  win.loadFile('./dist/index.html')
-
-  // 本地开发调试使用
-
-  // const win = new BaseWindow({ width: 1000, height: 1000 })
-  // const view1 = new WebContentsView({
+  // const win = new BrowserWindow({
   //   width: 1000,
   //   height: 800,
   //   // frame: false,
+  //   autoHideMenuBar: true,
+    
   //   webPreferences: {
   //     preload: path.join(__dirname, 'preload.js'),
   //     nodeIntegration: true,
+  //     webSecurity: false
   //   }
   // })
-  // win.contentView.addChildView(view1)
-  // const isMac = process.platform === 'darwin';  
-  // const toolbarHeight = isMac ? 22 : 29;  
-  // view1.webContents.loadURL('http://127.0.0.1:5173/#/')
-  // view1.setBounds({ x: 0, y: toolbarHeight, width: 1000, height: 800 - toolbarHeight })
+  // win.loadFile('./dist/index.html')
+
+  // 本地开发调试使用
+
+  const win = new BaseWindow({ width: 1000, height: 1000 })
+  const view1 = new WebContentsView({
+    width: 1000,
+    height: 800,
+    // frame: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: true,
+    }
+  })
+  win.contentView.addChildView(view1)
+  const isMac = process.platform === 'darwin';  
+  const toolbarHeight = isMac ? 22 : 29;  
+  view1.webContents.loadURL('http://127.0.0.1:5173/#/')
+  view1.setBounds({ x: 0, y: toolbarHeight, width: 1000, height: 800 - toolbarHeight })
 }
 let proxyServer = ''
 
@@ -191,6 +191,15 @@ app.on('ready', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
+
+// 退出时关闭代理服务,停止对端口的占用
+app.on('quit', () => {
+  if (proxyServer) {
+    proxyServer.close(); // 关闭当前服务器
+  }
+  console.log('quit')
+})
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
