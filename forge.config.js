@@ -1,6 +1,8 @@
 module.exports = {
   packagerConfig: {
     asar: true,
+    name: 'Proxy',
+    icon: 'public/icon.icns'
   },
   rebuildConfig: {},
   makers: [
@@ -17,6 +19,10 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-zip',
+      config: {
+        name: 'Proxy',
+        icon: 'public/icon.icns'
+      },
       platforms: ['darwin', 'linux', 'win64'],
     },
     {

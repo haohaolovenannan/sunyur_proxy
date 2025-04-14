@@ -8,7 +8,7 @@
         :style="{ width: '450px' }"
       >
         <a-form-item label="当前端口：">
-          {{ settingsForm.port }}
+          {{ homeStore.port }}
         </a-form-item>
         <a-form-item
           field="port"
@@ -61,7 +61,11 @@
     () => homeStore.port,
     (newVal) => {
       if (newVal !== 0) {
-        homeStore.checkPortStatus(newVal.toString());
+        homeStore.checkPortStatus(newVal.toString()).then((res) => {
+          if (res) {
+            homeStore.createHttpServer(newVal.toString());
+          }
+        });
         stopWatch();
       }
     }

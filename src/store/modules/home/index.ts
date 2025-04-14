@@ -1,4 +1,10 @@
-import { getSettings, Setting, updateProxyPort, checkPort } from '@/api/ipc';
+import {
+  getSettings,
+  Setting,
+  updateProxyPort,
+  checkPort,
+  createServer,
+} from '@/api/ipc';
 import { Message } from '@arco-design/web-vue';
 import { parseInt } from 'lodash';
 import { defineStore } from 'pinia';
@@ -16,6 +22,11 @@ const useHomeStore = defineStore('home', {
       await updateProxyPort({ port: listenPort });
       this.port = parseInt(listenPort);
       return true;
+    },
+
+    // 创建http服务
+    async createHttpServer(listenPort: string) {
+      await createServer(parseInt(listenPort));
     },
 
     // 检查端口状态

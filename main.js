@@ -17,65 +17,67 @@ let listenPort = 8015
 const createWindow = () => {
   // 打包使用
 
-  // const win = new BrowserWindow({
-  //   width: 1000,
-  //   height: 800,
-  //   // frame: false,
-  //   autoHideMenuBar: true,
-    
-  //   webPreferences: {
-  //     preload: path.join(__dirname, 'preload.js'),
-  //     nodeIntegration: true,
-  //     webSecurity: false
-  //   }
-  // })
-  // win.loadFile('./dist/index.html')
-
-  // 本地开发调试使用
-
-  const win = new BaseWindow({ width: 1000, height: 1000 })
-  const view1 = new WebContentsView({
+  const win = new BrowserWindow({
     width: 1000,
     height: 800,
     // frame: false,
+    autoHideMenuBar: true,
+    
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true,
+      webSecurity: false
     }
   })
-  win.contentView.addChildView(view1)
-  const isMac = process.platform === 'darwin';  
-  const toolbarHeight = isMac ? 22 : 29;  
-  view1.webContents.loadURL('http://127.0.0.1:5173/#/')
-  view1.setBounds({ x: 0, y: toolbarHeight, width: 1000, height: 800 - toolbarHeight })
+
+  win.on('close', (event) => {
+    // 关闭代理服务器
+    if (proxyServer) {
+      proxyServer.close(() => {
+        console.log('代理服务器已关闭');
+        // 退出应用程序
+        app.quit();
+      });
+      // 强制关闭所有连接
+      proxyServer.closeAllConnections();
+    } else {
+      // 如果没有代理服务器，直接退出
+      app.quit();
+    }
+  });
+  
+  win.loadFile('./dist/index.html')
+
+  // 本地开发调试使用
+
+  // const win = new BaseWindow({ width: 1000, height: 1000 })
+  // const view1 = new WebContentsView({
+  //   width: 1000,
+  //   height: 800,
+  //   // frame: false,
+  //   webPreferences: {
+  //     preload: path.join(__dirname, 'preload.js'),
+  //     nodeIntegration: true,
+  //   }
+  // })
+  // win.contentView.addChildView(view1)
+  // const isMac = process.platform === 'darwin';  
+  // const toolbarHeight = isMac ? 22 : 29;  
+  // view1.webContents.loadURL('http://127.0.0.1:5173/#/')
+  // view1.setBounds({ x: 0, y: toolbarHeight, width: 1000, height: 800 - toolbarHeight })
 }
 let proxyServer = ''
 
-// 检查端口状态
-function checkPortFn(port) {
-  console.log('checkPort', port);
-  return new Promise((resolve, reject) => {
-    // 使用try/catch捕获错误
-    try {
-      const server = net.createServer().listen(port);
-      server.on('listening', function () {
-        console.log('success', port);
-        resolve(true);
-        server.close();
-      });
-      server.on('error', function (err) {
-        reject(err);
-        server.close();
-      });
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
+
 
 function createHttpServer() {
   if (proxyServer) {
-    proxyServer.close(); // 关闭当前服务器
+    // 关闭当前服务器
+    proxyServer.close(() => {
+      console.log('代理服务器已关闭');
+    });
+    // 强制关闭所有连接
+    proxyServer.closeAllConnections();
   }
   proxyServer = http.createServer(function (req, res) {
     // 设置跨域响应头
@@ -98,6 +100,28 @@ function createHttpServer() {
     }
   }).listen(listenPort);
 } 
+
+// 检查端口状态
+function checkPortFn(port) {
+  console.log('checkPort', port);
+  return new Promise((resolve, reject) => {
+    // 使用try/catch捕获错误
+    try {
+      const server = net.createServer().listen(port);
+      server.on('listening', async function () {
+        console.log('success', port);
+        resolve(true);
+        await server.close();
+      });
+      server.on('error', function (err) {
+        reject(err);
+        server.close();
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
 
 async function setProxyTable() {
   const envList = await envTable.getList()
@@ -134,12 +158,20 @@ async function setSettings(){
     setting = await settingData.getSettings()
   }
   listenPort = parseInt(setting[0].port)
-  createHttpServer()
 }
-app.on('ready', () => {
-  setSettings()
-  createHttpServer()
+app.on('ready', async () => {
+  await setSettings()
+  // createHttpServer()
   createWindow()
+  ipcMain.handle('project.createServer', (_, port) => {
+    // 根据端口创建http服务
+    checkPortFn(port).then(res => {
+      if(res){
+        listenPort = port
+        createHttpServer()
+      }
+    })
+  })
   ipcMain.handle('project.getList', () => {
     return projectData.getList()
   })
@@ -174,8 +206,12 @@ app.on('ready', () => {
   ipcMain.handle('project.updateProxyPort',async (_,data) => {
     await settingData.updateProxyPort(data)
     // 更新过后重新获取setting并重启http服务
-    setSettings()
-    createHttpServer()
+    await setSettings()
+    checkPortFn(listenPort).then(res => {
+      if(res){
+        createHttpServer()
+      }
+    })
   })  
   ipcMain.handle('project.checkPortStatus', (_,port) => {
     return checkPortFn(Number(port))
@@ -197,6 +233,7 @@ app.on('quit', () => {
   if (proxyServer) {
     proxyServer.close(); // 关闭当前服务器
   }
+  proxyServer.closeAllConnections();
   console.log('quit')
 })
 

@@ -71,7 +71,12 @@
 
     <div class="right-panel">
       <div class="home-page-bar">
-        <span class="logo">Sunyur Proxy</span>
+        <span class="logo">
+          <a-avatar :size="40" shape="square">
+            <img src="@/assets/logo.png" alt="logo" />
+          </a-avatar>
+          Sunyur Proxy
+        </span>
         <span>当前端口：{{ homeStore.port }}</span>
         <span
           >端口状态：
@@ -189,7 +194,11 @@
               </div>
             </a-card>
 
-            <a-card class="general-card" title="自定义HEAED">
+            <a-card
+              class="general-card"
+              style="margin-bottom: 40px"
+              title="自定义HEAED"
+            >
               <template #extra>
                 <a-button type="primary" @click="addHeader">添加参数</a-button>
               </template>
@@ -224,7 +233,7 @@
                 </template>
               </a-table>
             </a-card>
-            <a-card>
+            <a-card style="position: fixed; bottom: 0; right: 0; left: 180px">
               <a-space fill direction="vertical" align="center">
                 <a-button type="primary" @click="save">保存</a-button>
               </a-space>
@@ -274,18 +283,11 @@
   </a-modal>
 
   <!-- 优化添加规则，使用正则匹配 -->
-  <a-modal v-model:visible="transferRulrsVisible">
-    <template #title> 快捷添加规则 </template>
-    <transferRules ref="transferRulesRef"></transferRules>
-    <template #footer>
-      <a-space size="small">
-        <a-button @click="transferRulrsVisible = false"> 取消 </a-button>
-        <a-button type="primary" @click="handleAddRulesOk()">
-          添加规则
-        </a-button>
-      </a-space>
-    </template>
-  </a-modal>
+  <transferRules
+    ref="transferRulesRef"
+    v-model:visible="transferRulrsVisible"
+    @handle-add-rules-ok="handleAddRulesOk"
+  ></transferRules>
 
   <!-- 代理设置 -->
   <settingsSet

@@ -1,8 +1,10 @@
 <template>
-  <div class="transfer-rules">
-    <a-textarea
-      v-model="rulesObj.proxyTable"
-      placeholder="请将项目中的proxyTable对象粘贴到此处，格式为
+  <a-modal v-model:visible="transferRulrsVisible">
+    <template #title> 快捷添加规则 </template>
+    <div class="transfer-rules">
+      <a-textarea
+        v-model="rulesObj.proxyTable"
+        placeholder="请将项目中的proxyTable对象粘贴到此处，格式为
   {
     '/workFlow': {
       target: target,
@@ -10,13 +12,22 @@
     },
   },
   ..."
-      style="margin-top: 20px"
-      :auto-size="{
-        minRows: 10,
-        maxRows: 500,
-      }"
-    />
-  </div>
+        style="margin-top: 20px"
+        :auto-size="{
+          minRows: 10,
+          maxRows: 500,
+        }"
+      />
+    </div>
+    <template #footer>
+      <a-space size="small">
+        <a-button @click="transferRulrsVisible = false"> 取消 </a-button>
+        <a-button type="primary" @click="emit('handleAddRulesOk')">
+          添加规则
+        </a-button>
+      </a-space>
+    </template>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
@@ -30,24 +41,18 @@
   });
   // const props = defineProps<{
   // }>();
-  // const emit = defineEmits<{
-  // }>();
+  const emit = defineEmits<{
+    (e: 'handleAddRulesOk'): void;
+  }>();
+  const transferRulrsVisible = defineModel<boolean>('visible');
   async function getAllRules() {
-    const strArr = Object.values(rulesObj.value.proxyTable);
-    const rulesArr = [];
-    for (let i = 0; i < strArr.length; i += 1) {
-      let currentRule = '';
-      if (strArr[i] === "'") {
-        i += 1;
-        if (strArr[i] === '/') {
-          while (strArr[i] !== "'") {
-            currentRule += strArr[i];
-            i += 1;
-          }
-          rulesArr.push(currentRule);
-        }
-      }
-    }
+    // 定义匹配模式规则
+    const rulesRegex = /'(\/[a-zA-Z]+(\/[a-zA-Z]+)*)'/g;
+    const rulesArr = `${rulesObj.value.proxyTable}`
+      .match(rulesRegex)
+      ?.map((item) => {
+        return item.slice(1, item.length - 1);
+      });
     return rulesArr;
   }
 

@@ -95,3 +95,7 @@ export function getSettings() {
 export function checkPort(port: number) {
   return window.API.project.checkPort(port);
 }
+
+export function createServer(port: number) {
+  return window.API.project.createServer(port);
+}
