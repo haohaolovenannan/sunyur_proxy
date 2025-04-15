@@ -103,13 +103,23 @@
         >
           <a-space direction="vertical" fill>
             <a-card class="general-card" title="当前环境" style="">
-              <h4
-                >{{ projectObj?.name }}-{{
-                  itemEnv?.name
-                }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;使用代理工具时，请在项目中的配置文件中将target设置为：<a-link
-                  >http://127.0.0.1:{{ homeStore.port }}/</a-link
-                ></h4
-              >
+              <h4>
+                <a-space>
+                  {{ projectObj?.name }}-{{
+                    itemEnv?.name
+                  }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;使用代理工具时，请在项目中的配置文件中将target设置为：
+                  <a-link>{{ target }} </a-link>
+                  <a-tooltip v-if="!hasCopied" content="点击复制">
+                    <icon-copy
+                      style="cursor: pointer"
+                      @click="handleCopyTarget"
+                    />
+                  </a-tooltip>
+                  <a-tooltip v-else content="复制成功" style="cursor: pointer">
+                    <icon-check-circle-fill style="color: green" />
+                  </a-tooltip>
+                </a-space>
+              </h4>
             </a-card>
 
             <a-card class="general-card" title="域名配置">
@@ -248,11 +258,15 @@
   <a-modal v-model:visible="addProjectVisible">
     <template #title> 添加项目 </template>
     <div>
-      <a-input ref="inputEnvName" v-model="addProjectName"></a-input>
+      <a-input
+        ref="inputEnvName"
+        v-model="addProjectName"
+        placeholder="请输入项目名称"
+      ></a-input>
     </div>
     <template #footer>
       <a-space size="small">
-        <a-button>取消</a-button>
+        <a-button @click="addProjectVisible = false">取消</a-button>
         <a-button type="primary" @click="handleAddProjectOk">确认</a-button>
       </a-space>
     </template>
@@ -260,7 +274,11 @@
   <a-modal v-model:visible="addEnvVisible">
     <template #title> 添加环境 </template>
     <div>
-      <a-input ref="inputEnvName" v-model="addEnvName"></a-input>
+      <a-input
+        ref="inputEnvName"
+        v-model="addEnvName"
+        placeholder="请输入环境名称"
+      ></a-input>
     </div>
     <template #footer>
       <a-space size="small">
@@ -319,6 +337,7 @@
   } from '@arco-design/web-vue';
   import { watch, computed, onMounted, reactive, ref, nextTick } from 'vue';
   import useHomeStore from '@/store/modules/home';
+  import { copyToClipboard } from '@/utils/text';
   import transferRules from './components/transfer-rules.vue';
   import settingsSet from './components/settings-set.vue';
   import ColumnsConstant from './constant';
@@ -366,6 +385,17 @@
       rule: '',
       target: '',
     });
+  }
+
+  const target = computed(() => {
+    return `http://127.0.0.1:${homeStore.port}/`;
+  });
+
+  const hasCopied = ref(false);
+
+  async function handleCopyTarget() {
+    await copyToClipboard(target.value);
+    hasCopied.value = true;
   }
 
   async function handleAddRulesOk() {
